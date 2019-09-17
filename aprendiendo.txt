@@ -1,0 +1,311 @@
+Instalaciones
+npm init
+npm install express --save
+npm install cors
+npm install body-parser
+npm i cors
+
+npm install @types/express --save-dev
+npm install @types/cors --save-dev
+
+
+Inicializamos el typexsipt
+tsc --init
+
+Para transpilar los archivos
+tsc -w
+
+
+1 Configuramos el typescript, cambiamos el outdir y la versión target es5 por es6
+
+tsconfig.json
+################################################################################
+{
+  "compilerOptions": {
+    /* Basic Options */
+    // "incremental": true,                   /* Enable incremental compilation */
+    "target": "es6",                          /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019' or 'ESNEXT'. */
+    "module": "commonjs",                     /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */
+    // "lib": [],                             /* Specify library files to be included in the compilation. */
+    // "allowJs": true,                       /* Allow javascript files to be compiled. */
+    // "checkJs": true,                       /* Report errors in .js files. */
+    // "jsx": "preserve",                     /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */
+    // "declaration": true,                   /* Generates corresponding '.d.ts' file. */
+    // "declarationMap": true,                /* Generates a sourcemap for each corresponding '.d.ts' file. */
+    // "sourceMap": true,                     /* Generates corresponding '.map' file. */
+    // "outFile": "./",                       /* Concatenate and emit output to single file. */
+    "outDir": "dist/",                        /* Redirect output structure to the directory. */
+    // "rootDir": "./",                       /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
+    // "composite": true,                     /* Enable project compilation */
+    // "tsBuildInfoFile": "./",               /* Specify file to store incremental compilation information */
+    // "removeComments": true,                /* Do not emit comments to output. */
+    // "noEmit": true,                        /* Do not emit outputs. */
+    // "importHelpers": true,                 /* Import emit helpers from 'tslib'. */
+    // "downlevelIteration": true,            /* Provide full support for iterables in 'for-of', spread, and destructuring when targeting 'ES5' or 'ES3'. */
+    // "isolatedModules": true,               /* Transpile each file as a separate module (similar to 'ts.transpileModule'). */
+
+    /* Strict Type-Checking Options */
+    "strict": true,                           /* Enable all strict type-checking options. */
+    // "noImplicitAny": true,                 /* Raise error on expressions and declarations with an implied 'any' type. */
+    // "strictNullChecks": true,              /* Enable strict null checks. */
+    // "strictFunctionTypes": true,           /* Enable strict checking of function types. */
+    // "strictBindCallApply": true,           /* Enable strict 'bind', 'call', and 'apply' methods on functions. */
+    // "strictPropertyInitialization": true,  /* Enable strict checking of property initialization in classes. */
+    // "noImplicitThis": true,                /* Raise error on 'this' expressions with an implied 'any' type. */
+    // "alwaysStrict": true,                  /* Parse in strict mode and emit "use strict" for each source file. */
+
+    /* Additional Checks */
+    // "noUnusedLocals": true,                /* Report errors on unused locals. */
+    // "noUnusedParameters": true,            /* Report errors on unused parameters. */
+    // "noImplicitReturns": true,             /* Report error when not all code paths in function return a value. */
+    // "noFallthroughCasesInSwitch": true,    /* Report errors for fallthrough cases in switch statement. */
+
+    /* Module Resolution Options */
+    // "moduleResolution": "node",            /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */
+    // "baseUrl": "./",                       /* Base directory to resolve non-absolute module names. */
+    // "paths": {},                           /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
+    // "rootDirs": [],                        /* List of root folders whose combined content represents the structure of the project at runtime. */
+    // "typeRoots": [],                       /* List of folders to include type definitions from. */
+    // "types": [],                           /* Type declaration files to be included in compilation. */
+    // "allowSyntheticDefaultImports": true,  /* Allow default imports from modules with no default export. This does not affect code emit, just typechecking. */
+    "esModuleInterop": true                   /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */
+    // "preserveSymlinks": true,              /* Do not resolve the real path of symlinks. */
+    // "allowUmdGlobalAccess": true,          /* Allow accessing UMD globals from modules. */
+
+    /* Source Map Options */
+    // "sourceRoot": "",                      /* Specify the location where debugger should locate TypeScript files instead of source locations. */
+    // "mapRoot": "",                         /* Specify the location where debugger should locate map files instead of generated locations. */
+    // "inlineSourceMap": true,               /* Emit a single file with source maps instead of having a separate file. */
+    // "inlineSources": true,                 /* Emit the source alongside the sourcemaps within a single file; requires '--inlineSourceMap' or '--sourceMap' to be set. */
+
+    /* Experimental Options */
+    // "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
+    // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
+  }
+}
+
+################################################################################
+
+
+2 Iniciando el servidor express
+
+tsconfig.json
+index.ts
+################################################################################
+import Server from "./classes/server";
+
+
+const server = new Server();
+
+
+server.start( () => {
+    console.log(`Servidor corriendo en el puerto ${ server.port }`);
+});
+################################################################################
+classes/server.ts
+################################################################################
+import express from 'express';
+import { SERVER_PORT } from '../global/environment';
+
+
+export default class Server {
+
+    public app: express.Application;
+    public port: number;
+
+
+    constructor() {
+
+        this.app = express();
+        this.port = SERVER_PORT;
+
+    }
+
+    start( callback: Function ) {
+
+        this.app.listen( this.port, callback() );
+        
+    }
+
+}
+
+################################################################################
+environment.ts
+################################################################################
+
+
+export const SERVER_PORT: number = Number( process.env.PORT ) || 5000;
+
+################################################################################
+
+
+3 Creamos los servicios get y post par ala ruta mensajes
+
+tsconfig.json
+index.ts
+################################################################################
+import Server from "./classes/server";
+import router from "./routes/router";
+
+
+const server = new Server();
+
+server.app.use('/', router)
+
+
+server.start( () => {
+    console.log(`Servidor corriendo en el puerto ${ server.port }`);
+});
+################################################################################
+classes/server.ts
+environment.ts
+routes/router.ts
+################################################################################
+import { Router, Request, Response } from 'express';
+
+
+const router = Router();
+
+
+router.get('/mensajes', ( req: Request, res: Response ) => {
+
+    res.json({
+        ok: true,
+        mensaje: 'Get listo'
+    });
+
+});
+
+router.post('/mensajes', ( req: Request, res: Response ) => {
+
+    res.json({
+        ok: true,
+        mensaje: 'Post listo'
+    });
+
+});
+
+
+export default router;
+
+################################################################################
+
+
+4 Configuramos el body parser para transpormas los posts en json, creamos otra ruta de la que extraer un parámetro
+
+tsconfig.json
+index.ts
+################################################################################
+import Server from "./classes/server";
+import router from "./routes/router";
+
+import bodyParser from 'body-parser';
+
+
+const server = new Server();
+
+// Body parser
+server.app.use( bodyParser.urlencoded({ extended: true}));
+server.app.use( bodyParser.json() );
+
+// Rutas
+server.app.use('/', router)
+
+
+server.start( () => {
+    console.log(`Servidor corriendo en el puerto ${ server.port }`);
+});
+################################################################################
+classes/server.ts
+environment.ts
+routes/router.ts
+################################################################################
+import { Router, Request, Response } from 'express';
+
+
+const router = Router();
+
+
+router.get('/mensajes', ( req: Request, res: Response ) => {
+
+    res.json({
+        ok: true,
+        mensaje: 'Get listo'
+    });
+
+});
+
+router.post('/mensajes', ( req: Request, res: Response ) => {
+
+    const uno = req.body.uno;
+    const dos = req.body.dos;
+
+    res.json({
+        ok: true,
+        uno,
+        dos
+    });
+
+});
+
+router.post('/mensajes/:id', ( req: Request, res: Response ) => {
+
+    const uno = req.body.uno;
+    const dos = req.body.dos;
+    const id = req.params.id;
+
+    res.json({
+        ok: true,
+        uno,
+        dos,
+        id
+    });
+
+});
+
+
+export default router;
+
+################################################################################
+
+
+5 Implementación de los cors
+
+tsconfig.json
+index.ts
+################################################################################
+import Server from "./classes/server";
+import router from "./routes/router";
+import bodyParser from 'body-parser';
+import cors from 'cors';
+
+
+const server = new Server();
+
+// Body parser
+server.app.use( bodyParser.urlencoded({ extended: true}));
+server.app.use( bodyParser.json() );
+
+// CORS
+server.app.use( cors({ origin: true, credentials: true}) );
+
+// Rutas de servicios
+server.app.use('/', router)
+
+
+server.start( () => {
+    console.log(`Servidor corriendo en el puerto ${ server.port }`);
+});
+################################################################################
+classes/server.ts
+environment.ts
+routes/router.ts
+
+
+6
+
+tsconfig.json
+index.ts
+classes/server.ts
+environment.ts
+routes/router.ts
