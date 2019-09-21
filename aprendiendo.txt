@@ -5,8 +5,11 @@ npm install cors
 npm install body-parser
 npm i cors
 
+npm install socket.io
+
 npm install @types/express --save-dev
 npm install @types/cors --save-dev
+npm install @types/socket.io --save-dev
 
 
 Inicializamos el typexsipt
@@ -302,10 +305,513 @@ environment.ts
 routes/router.ts
 
 
-6
+6 Subimos los cambios a github
+git básico
+
+creamos un nuevo repositorio
+colocar descripción
+
+ya tenemos un repositorio
+
+crear repositorio
+
+git add .
+git commit -m "Primer commit rest-server"
+
+git remote add origin git@github.com:Nemut/socket-server.git
+git push -u origin master
+git tag -a v1.0.0 -m "REST server listo"
+git tag
+git push --tags
+
+
+editamos la tag para crear una relesae
 
 tsconfig.json
 index.ts
 classes/server.ts
 environment.ts
 routes/router.ts
+.gitignore
+################################################################################
+dist/
+node_modules/
+################################################################################
+README.md
+################################################################################
+
+
+# Socket-server
+
+Reconstruir módulos de node
+```
+npm install
+```
+
+Generar el DIST
+```
+tsc -w
+```
+
+Levantar el servidor, cualquiera de estos dos comandos
+```
+nodemon dist/
+node dist/
+```
+
+################################################################################
+
+
+7 Iniciamos la configuración del socket io
+
+tsconfig.json
+index.ts
+classes/server.ts
+################################################################################
+import express from 'express';
+import { SERVER_PORT } from '../global/environment';
+import socketIO from 'socket.io';
+import http from 'http';
+
+
+export default class Server {
+
+    public app: express.Application;
+    public port: number;
+
+    public io: socketIO.Server;
+    private httpServer: http.Server;
+
+
+    constructor() {
+
+        this.app = express();
+        this.port = SERVER_PORT;
+
+        // express trabaja sobre http
+        // necesitamos pasar la configuración del servidor a través de http
+        // para después pasarselo a socket io
+        this.httpServer = new http.Server( this.app );
+        this.io = socketIO( this.httpServer );
+
+        this.escucharSockets();
+
+    }
+
+    private escucharSockets() {
+
+        console.log('Escuchando conexiones - sockets');
+
+        this.io.on('connection', cliente => {
+            console.log('Cliente conectado');
+        });
+
+    }
+
+    start( callback: Function ) {
+
+        this.httpServer.listen( this.port, callback() );
+        
+    }
+
+}
+
+################################################################################
+environment.ts
+routes/router.ts
+.gitignore
+README.md
+
+
+8 Implementamos el patrón singleton para llamar a la clase server una única vez, el constructor será privado y creamos un método estático que devolcerá la instancia
+
+tsconfig.json
+index.ts
+################################################################################
+import Server from "./classes/server";
+import router from "./routes/router";
+import bodyParser from 'body-parser';
+import cors from 'cors';
+
+
+const server = Server.instance;
+
+// Body parser
+server.app.use( bodyParser.urlencoded({ extended: true}));
+server.app.use( bodyParser.json() );
+
+// CORS
+server.app.use( cors({ origin: true, credentials: true}) );
+
+// Rutas de servicios
+server.app.use('/', router)
+
+
+server.start( () => {
+    console.log(`Servidor corriendo en el puerto ${ server.port }`);
+});
+################################################################################
+classes/server.ts
+################################################################################
+import express from 'express';
+import { SERVER_PORT } from '../global/environment';
+import socketIO from 'socket.io';
+import http from 'http';
+
+
+export default class Server {
+
+    private static _instance: Server;
+
+    public app: express.Application;
+    public port: number;
+
+    public io: socketIO.Server;
+    private httpServer: http.Server;
+
+
+    private constructor() {
+
+        this.app = express();
+        this.port = SERVER_PORT;
+
+        // express trabaja sobre http
+        // necesitamos pasar la configuración del servidor a través de http
+        // para después pasarselo a socket io
+        this.httpServer = new http.Server( this.app );
+        this.io = socketIO( this.httpServer );
+
+        this.escucharSockets();
+
+    }
+
+    public static get instance() {
+        return this._instance || ( this._instance = new this() );
+    }
+
+    private escucharSockets() {
+
+        console.log('Escuchando conexiones - sockets');
+
+        this.io.on('connection', cliente => {
+            console.log('Cliente conectado');
+        });
+
+    }
+
+    start( callback: Function ) {
+
+        this.httpServer.listen( this.port, callback() );
+        
+    }
+
+}
+
+################################################################################
+environment.ts
+routes/router.ts
+.gitignore
+README.md
+
+
+9 Vamos a crear la lógica para manejar la desconexión de un cliente y externalizmaos la lógica en funciones en el fichero sockets.ts
+
+tsconfig.json
+index.ts
+classes/server.ts
+################################################################################
+import express from 'express';
+import { SERVER_PORT } from '../global/environment';
+import socketIO from 'socket.io';
+import http from 'http';
+import * as socket from '../sockets/sockets';
+
+
+export default class Server {
+
+    private static _instance: Server;
+
+    public app: express.Application;
+    public port: number;
+
+    public io: socketIO.Server;
+    private httpServer: http.Server;
+
+
+    private constructor() {
+
+        this.app = express();
+        this.port = SERVER_PORT;
+
+        // express trabaja sobre http
+        // necesitamos pasar la configuración del servidor a través de http
+        // para después pasarselo a socket io
+        this.httpServer = new http.Server( this.app );
+        this.io = socketIO( this.httpServer );
+
+        this.escucharSockets();
+
+    }
+
+    public static get instance() {
+        return this._instance || ( this._instance = new this() );
+    }
+
+    private escucharSockets() {
+
+        console.log('Escuchando conexiones - sockets');
+
+        this.io.on('connection', cliente => {
+
+            console.log('Cliente conectado');
+
+            // Desconectar
+            socket.desconectar( cliente );
+
+        });
+
+    }
+
+    start( callback: Function ) {
+
+        this.httpServer.listen( this.port, callback() );
+        
+    }
+
+}
+
+################################################################################
+environment.ts
+routes/router.ts
+.gitignore
+README.md
+sockets/sockets.ts
+################################################################################
+import { Socket } from 'socket.io';
+
+
+export const desconectar = ( cliente: Socket ) => {
+
+    cliente.on('disconnect', () => {
+        console.log('Cliente desconectado');
+    });
+
+}
+################################################################################
+
+
+10 Preàramos el rest server para recibir los mensajes del cliente
+
+tsconfig.json
+index.ts
+classes/server.ts
+################################################################################
+import express from 'express';
+import { SERVER_PORT } from '../global/environment';
+import socketIO from 'socket.io';
+import http from 'http';
+import * as socket from '../sockets/sockets';
+
+
+export default class Server {
+
+    private static _instance: Server;
+
+    public app: express.Application;
+    public port: number;
+
+    public io: socketIO.Server;
+    private httpServer: http.Server;
+
+
+    private constructor() {
+
+        this.app = express();
+        this.port = SERVER_PORT;
+
+        // express trabaja sobre http
+        // necesitamos pasar la configuración del servidor a través de http
+        // para después pasarselo a socket io
+        this.httpServer = new http.Server( this.app );
+        this.io = socketIO( this.httpServer );
+
+        this.escucharSockets();
+
+    }
+
+    public static get instance() {
+        return this._instance || ( this._instance = new this() );
+    }
+
+    private escucharSockets() {
+
+        console.log('Escuchando conexiones - sockets');
+
+        this.io.on('connection', cliente => {
+
+            console.log('Cliente conectado');
+
+            // Mensajes
+            socket.mensaje( cliente );
+
+            // Desconectar
+            socket.desconectar( cliente );
+
+        });
+
+    }
+
+    start( callback: Function ) {
+
+        this.httpServer.listen( this.port, callback() );
+        
+    }
+
+}
+
+################################################################################
+environment.ts
+routes/router.ts
+.gitignore
+README.md
+sockets/sockets.ts
+################################################################################
+import { Socket } from 'socket.io';
+
+
+export const desconectar = ( cliente: Socket ) => {
+
+    cliente.on('disconnect', () => {
+        console.log('Cliente desconectado');
+    });
+
+}
+
+
+export const mensaje = ( cliente: Socket ) => {
+
+    cliente.on('mensaje', ( payload: {de: string, cuerpo: string} ) => {
+
+        console.log('Mensaje recibido', payload);
+
+    });
+
+}
+
+################################################################################
+
+
+11 Preparamos el envío de un mensaje de prueba, al fichero sockets.ts le pasamos el io por referencia
+
+tsconfig.json
+index.ts
+classes/server.ts
+################################################################################
+import express from 'express';
+import { SERVER_PORT } from '../global/environment';
+import socketIO from 'socket.io';
+import http from 'http';
+import * as socket from '../sockets/sockets';
+
+
+export default class Server {
+
+    private static _instance: Server;
+
+    public app: express.Application;
+    public port: number;
+
+    public io: socketIO.Server;
+    private httpServer: http.Server;
+
+
+    private constructor() {
+
+        this.app = express();
+        this.port = SERVER_PORT;
+
+        // express trabaja sobre http
+        // necesitamos pasar la configuración del servidor a través de http
+        // para después pasarselo a socket io
+        this.httpServer = new http.Server( this.app );
+        this.io = socketIO( this.httpServer );
+
+        this.escucharSockets();
+
+    }
+
+    public static get instance() {
+        return this._instance || ( this._instance = new this() );
+    }
+
+    private escucharSockets() {
+
+        console.log('Escuchando conexiones - sockets');
+
+        this.io.on('connection', cliente => {
+
+            console.log('Cliente conectado');
+
+            // Mensajes
+            socket.mensaje( cliente, this.io );
+
+            // Desconectar
+            socket.desconectar( cliente );
+
+        });
+
+    }
+
+    start( callback: Function ) {
+
+        this.httpServer.listen( this.port, callback() );
+        
+    }
+
+}
+
+################################################################################
+environment.ts
+routes/router.ts
+.gitignore
+README.md
+sockets/sockets.ts
+################################################################################
+import { Socket } from 'socket.io';
+import socketIO from 'socket.io';
+
+
+export const desconectar = ( cliente: Socket ) => {
+
+    cliente.on('disconnect', () => {
+        console.log('Cliente desconectado');
+    });
+
+}
+
+
+export const mensaje = ( cliente: Socket, io: socketIO.Server ) => {
+
+    cliente.on('mensaje', ( payload: {de: string, cuerpo: string} ) => {
+
+        console.log('Mensaje recibido', payload);
+
+        io.emit('mensaje-nuevo', payload );
+
+    });
+
+}
+
+################################################################################
+
+
+12
+
+tsconfig.json
+index.ts
+classes/server.ts
+environment.ts
+routes/router.ts
+.gitignore
+README.md
+sockets/sockets.ts
